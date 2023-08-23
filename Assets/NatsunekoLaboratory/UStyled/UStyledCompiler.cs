@@ -104,8 +104,12 @@ namespace NatsunekoLaboratory.UStyled
                         var m = pattern.Key.Match(selector);
                         if (m.Success)
                         {
-                            sb.AppendLine(CompileDynamicRule(selector, m, pattern.Value));
-                            return true;
+                            var r = CompileDynamicRule(selector, m, pattern.Value, out var val);
+                            if (r)
+                            {
+                                sb.AppendLine(val);
+                                return true;
+                            }
                         }
                     }
 
@@ -117,8 +121,6 @@ namespace NatsunekoLaboratory.UStyled
                     var r = SetStaticSelector(selector) || SetDynamicSelector(selector);
                     if (!r) Debug.LogWarning($"Unknown Selector: {selector}");
                 }
-
-                Debug.Log(sb.ToString());
 
                 return sb.ToString();
             }
@@ -156,13 +158,21 @@ namespace NatsunekoLaboratory.UStyled
 
                 if (value is string s && !string.IsNullOrWhiteSpace(s))
                 {
-                    rules.Add($"{name}: {c(s)}");
+                    var r = c(s);
+                    if (string.IsNullOrWhiteSpace(r))
+                        return string.Empty;
+
+                    rules.Add($"{name}: {r}");
                     continue;
                 }
 
                 if (value is float f)
                 {
-                    rules.Add($"{name}: {c(f.ToString(CultureInfo.InvariantCulture))}");
+                    var r = c(f.ToString(CultureInfo.InvariantCulture));
+                    if (string.IsNullOrWhiteSpace(r))
+                        return string.Empty;
+
+                    rules.Add($"{name}: {r}");
                     continue;
                 }
 
@@ -175,10 +185,10 @@ namespace NatsunekoLaboratory.UStyled
                 Debug.LogWarning($"Unsupported value: ${name}:${value}");
             }
 
-            return string.Join(Environment.NewLine, rules.Select(w => $"{w};"));
+            return string.Join(" ", rules.Select(w => $"{w};"));
         }
 
-        private string CompileDynamicRule(string selector, Match m, IRule rule)
+        private bool CompileDynamicRule(string selector, Match m, IRule rule, out string result)
         {
             var val = new Regex(@"\$\d+", RegexOptions.Compiled);
             if (rule is IDynamicRule d)
@@ -210,10 +220,14 @@ namespace NatsunekoLaboratory.UStyled
                 });
 
                 if (!string.IsNullOrWhiteSpace(properties))
-                    return $".{selector} {{ {properties} }}";
+                {
+                    result = $".{selector} {{ {properties} }}";
+                    return true;
+                }
             }
 
-            return string.Empty;
+            result = string.Empty;
+            return false;
         }
 
         private static StyleSheet CompileStyleSheetFromString(string str)
