@@ -112,7 +112,7 @@ namespace NatsunekoLaboratory.UStyled
                     return false;
                 }
 
-                foreach (var selector in selectors)
+                foreach (var selector in selectors.Distinct())
                 {
                     var r = SetStaticSelector(selector) || SetDynamicSelector(selector);
                     if (!r) Debug.LogWarning($"Unknown Selector: {selector}");
