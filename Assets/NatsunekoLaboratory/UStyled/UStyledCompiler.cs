@@ -224,7 +224,8 @@ namespace NatsunekoLaboratory.UStyled
 
             try
             {
-                var t = typeof(AssetDatabase).Assembly.GetType("UnityEditor.StyleSheets.StyleSheetImporterImpl");
+                var t = typeof(AssetDatabase).Assembly.GetType("UnityEditor.StyleSheets.StyleSheetImporterImpl") ?? typeof(AssetDatabase).Assembly.GetType("UnityEditor.UIElements.StyleSheets.StyleSheetImporterImpl");
+                ;
                 var i = Activator.CreateInstance(t);
                 var m = t.GetMethod("Import", BindingFlags.Public | BindingFlags.Instance);
                 m?.Invoke(i, new object[] { asset, str });
