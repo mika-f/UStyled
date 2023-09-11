@@ -3,15 +3,11 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 // ------------------------------------------------------------------------------------------
 
-using NatsunekoLaboratory.UStyled.Configurations;
-
-namespace NatsunekoLaboratory.UStyled.Validators
+namespace NatsunekoLaboratory.UStyled.Rules.Interfaces
 {
-    public class PassThroughValidator : IPropertyValueValidator
-    {
-        public bool IsValid(IConfigurationProvider configuration, string value)
-        {
-            return true;
-        }
-    }
+    /// <summary>
+    ///     IStaticRule represents a rule which cannot be changed at runtime.
+    ///     If you want to use pre-compiled rules, you should use this interface. otherwise, you should use IDynamicRule.
+    /// </summary>
+    public interface IStaticRule : IRule { }
 }

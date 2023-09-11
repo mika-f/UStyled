@@ -4,7 +4,7 @@
 // ------------------------------------------------------------------------------------------
 
 using NatsunekoLaboratory.UStyled.Configurations;
-using NatsunekoLaboratory.UStyled.Rules;
+using NatsunekoLaboratory.UStyled.Rules.Interfaces;
 
 namespace NatsunekoLaboratory.UStyled.Converters
 {

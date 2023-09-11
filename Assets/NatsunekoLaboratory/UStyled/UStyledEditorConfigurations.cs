@@ -3,15 +3,16 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 // ------------------------------------------------------------------------------------------
 
-using NatsunekoLaboratory.UStyled.Configurations;
+using UnityEditor;
 
-namespace NatsunekoLaboratory.UStyled.Validators
+namespace Assets.NatsunekoLaboratory.UStyled
 {
-    public class PassThroughValidator : IPropertyValueValidator
+    internal static class UStyledEditorConfigurations
     {
-        public bool IsValid(IConfigurationProvider configuration, string value)
+        [InitializeOnLoadMethod]
+        public static void InitializeEditor()
         {
-            return true;
+            PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, "USTYLED");
         }
     }
 }

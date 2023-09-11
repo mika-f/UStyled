@@ -5,16 +5,16 @@
 
 using System.Collections.Generic;
 
-namespace NatsunekoLaboratory.UStyled.Configurations
+using NatsunekoLaboratory.UStyled.Rules;
+using NatsunekoLaboratory.UStyled.Rules.Interfaces;
+
+namespace NatsunekoLaboratory.UStyled.Configurations.Presets
 {
-    public interface IConfigurationProvider
+    public class StylifyPreset : IPreset
     {
-        public uint DefaultFontSize { get; }
-
-        public IReadOnlyDictionary<string, string> ColorVariants { get; }
-
-        public IReadOnlyDictionary<string, float> SizeVariants { get; }
-
-        public IReadOnlyDictionary<string, string> Variables { get; }
+        public List<IRule> Rules => new()
+        {
+            new RawSelectorPropertyRule()
+        };
     }
 }

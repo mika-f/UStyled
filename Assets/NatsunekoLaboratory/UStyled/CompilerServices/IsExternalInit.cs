@@ -3,15 +3,7 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 // ------------------------------------------------------------------------------------------
 
-using NatsunekoLaboratory.UStyled.Configurations;
-
-namespace NatsunekoLaboratory.UStyled.Validators
+namespace System.Runtime.CompilerServices
 {
-    public class PassThroughValidator : IPropertyValueValidator
-    {
-        public bool IsValid(IConfigurationProvider configuration, string value)
-        {
-            return true;
-        }
-    }
+    internal static class IsExternalInit { }
 }

@@ -6,19 +6,20 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 
-using JetBrains.Annotations;
-
+using NatsunekoLaboratory.UStyled.Compiler;
 using NatsunekoLaboratory.UStyled.Configurations;
-using NatsunekoLaboratory.UStyled.Rules;
+using NatsunekoLaboratory.UStyled.Rules.Interfaces;
 
 using UnityEditor;
+using UnityEditor.UIElements;
 
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -31,215 +32,70 @@ namespace NatsunekoLaboratory.UStyled
     /// </summary>
     public class UStyledCompiler
     {
+        private static readonly Regex Splitter = new(@"[^\s""']+|""([^""]*)""|'([^']*)'", RegexOptions.Compiled);
+
         private readonly ConfigurationProvider _configuration;
-        private readonly Dictionary<Regex, IRule> _patterns;
-        private readonly Dictionary<string, string> _rules;
+        private readonly ClassContainer _container;
+        private readonly UStyledPreprocessor _preprocessor;
+        private readonly IReadOnlyCollection<IRule> _rules;
 
-        public UStyledCompiler()
-        {
-            _rules = new Dictionary<string, string>();
-            _patterns = new Dictionary<Regex, IRule>();
-        }
-
-        private UStyledCompiler(ConfigurationProvider configuration, Dictionary<string, string> rules, Dictionary<Regex, IRule> patterns)
+        internal UStyledCompiler(ConfigurationProvider configuration, UStyledPreprocessor preprocessor, IReadOnlyCollection<IRule> rules)
         {
             _configuration = configuration;
+            _preprocessor = preprocessor;
             _rules = rules;
-            _patterns = patterns;
+
+            _container = new ClassContainer();
         }
 
-        public UStyledCompiler DefineConfig(ConfigurationProvider configuration)
+        public (VisualTreeAsset VisualTree, StyleSheet StyleSheet) CompileAsAsset(VisualTreeAsset asset, CompileMode mode = CompileMode.Jit)
         {
-            foreach (var rule in configuration.GetStaticRules())
-            {
-                if (_rules.ContainsKey(rule.Key))
-                    continue;
+            var (uxml, uss) = CompileAsString(asset, mode);
 
-                _rules.Add(rule.Key, CompileRule(rule.Value));
-            }
-
-            foreach (var rule in configuration.GetDynamicRules())
-            {
-                if (_patterns.ContainsKey(rule.Key))
-                    continue;
-
-                _patterns.Add(rule.Key, rule.Value);
-            }
-
-            return new UStyledCompiler(configuration, _rules, _patterns);
+            return (
+                CompileVisualTreeFromString(uxml),
+                CompileStyleSheetFromString(uss)
+            );
         }
 
-        public string Compile(VisualTreeAsset asset)
-        {
-            return CompileAsString(asset);
-        }
-
-        public StyleSheet JitCompile(VisualTreeAsset asset)
-        {
-            return CompileStyleSheetFromString(CompileAsString(asset));
-        }
-
-        private string CompileAsString(VisualTreeAsset asset)
+        private static VisualTreeAsset CompileVisualTreeFromString(string str)
         {
             try
             {
-                var selectors = GetVisualElementAssets(asset);
-                var sb = new StringBuilder();
+                var t = typeof(UxmlNamespacePrefixAttribute).Assembly.GetType("UnityEditor.UIElements.UXMLImporterImpl");
+                var i = Activator.CreateInstance(t, true);
+                var m = t.GetMethod("ImportXmlFromString", BindingFlags.NonPublic | BindingFlags.Instance);
+                var args = new object[] { str, null };
 
-                bool SetStaticSelector(string selector)
+                m?.Invoke(i, args);
+
+                var asset = args[1] as VisualTreeAsset;
+
+                if (asset != null)
                 {
-                    if (_rules.TryGetValue(selector, out var val))
-                    {
-                        sb.AppendLine($".{selector} {{ {val} }}");
-                        return true;
-                    }
-
-                    return false;
+                    asset.hideFlags = HideFlags.NotEditable;
+                    asset.name = $"UStyled-TransformedMarkups-{CalcHashString(str)}.uxml";
                 }
 
-                bool SetDynamicSelector(string selector)
-                {
-                    foreach (var pattern in _patterns)
-                    {
-                        var m = pattern.Key.Match(selector);
-                        if (m.Success)
-                        {
-                            var r = CompileDynamicRule(selector, m, pattern.Value, out var val);
-                            if (r)
-                            {
-                                sb.AppendLine(val);
-                                return true;
-                            }
-                        }
-                    }
-
-                    return false;
-                }
-
-                foreach (var selector in selectors.Distinct())
-                {
-                    var r = SetStaticSelector(selector) || SetDynamicSelector(selector);
-                    if (!r) Debug.LogWarning($"Unknown Selector: {selector}");
-                }
-
-                return sb.ToString();
+                return asset;
             }
             catch (Exception e)
             {
                 Debug.LogException(e);
-                return string.Empty;
-            }
-        }
-
-        private static string CompileRule(IRule rule, [CanBeNull] Func<string, string> converter = null)
-        {
-            string PassThrough(string w)
-            {
-                return w;
             }
 
-            var rules = new List<string>();
-            var properties = rule.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
-            var c = converter ?? PassThrough;
-
-            foreach (var property in properties)
-            {
-                if (property.Name == nameof(DynamicRule.Converter) || property.Name == nameof(DynamicRule.Validator))
-                    continue;
-
-                var name = ToKebabCase(property.Name);
-                if (name.StartsWith("ext"))
-                    name = name.Substring("ext".Length);
-
-                var value = property.GetValue(rule);
-
-                if (value == null)
-                    continue;
-
-                if (value is string s && !string.IsNullOrWhiteSpace(s))
-                {
-                    var r = c(s);
-                    if (string.IsNullOrWhiteSpace(r))
-                        return string.Empty;
-
-                    rules.Add($"{name}: {r}");
-                    continue;
-                }
-
-                if (value is float f)
-                {
-                    var r = c(f.ToString(CultureInfo.InvariantCulture));
-                    if (string.IsNullOrWhiteSpace(r))
-                        return string.Empty;
-
-                    rules.Add($"{name}: {r}");
-                    continue;
-                }
-
-                if (value is Enum)
-                {
-                    rules.Add($"{name}: {c(ToKebabCase(value.ToString()))}");
-                    continue;
-                }
-
-                Debug.LogWarning($"Unsupported value: ${name}:${value}");
-            }
-
-            return string.Join(" ", rules.Select(w => $"{w};"));
-        }
-
-        private bool CompileDynamicRule(string selector, Match m, IRule rule, out string result)
-        {
-            var val = new Regex(@"\$\d+", RegexOptions.Compiled);
-            if (rule is IDynamicRule d)
-            {
-                var properties = CompileRule(d, w =>
-                {
-                    var r = w;
-                    var matches = val.Matches(w);
-                    foreach (var match in matches.Cast<Match>())
-                    {
-                        var arbitrary = m.Groups[int.Parse(match.Value.Substring(1))].Value;
-                        var validator = d.Validator;
-
-                        if (validator.IsValid(arbitrary))
-                        {
-                            var converter = d.Converter;
-                            var value = converter.ConvertValue(d, _configuration, arbitrary);
-
-                            r = r.Replace(match.Value, value.ToString());
-                        }
-                        else
-                        {
-                            Debug.LogWarning($"Unsupported value: ${selector}:${arbitrary}");
-                            return string.Empty;
-                        }
-                    }
-
-                    return r;
-                });
-
-                if (!string.IsNullOrWhiteSpace(properties))
-                {
-                    result = $".{selector} {{ {properties} }}";
-                    return true;
-                }
-            }
-
-            result = string.Empty;
-            return false;
+            return ScriptableObject.CreateInstance<VisualTreeAsset>();
         }
 
         private static StyleSheet CompileStyleSheetFromString(string str)
         {
             var asset = ScriptableObject.CreateInstance<StyleSheet>();
             asset.hideFlags = HideFlags.NotEditable;
-            asset.name = $"UStyled-Jit-Compiled-{CalcHashString(str)}.uss";
+            asset.name = $"UStyled-CompiledStyles-{CalcHashString(str)}.uss";
 
             try
             {
-                var t = typeof(AssetDatabase).Assembly.GetType("UnityEditor.StyleSheets.StyleSheetImporterImpl") ?? typeof(AssetDatabase).Assembly.GetType("UnityEditor.UIElements.StyleSheets.StyleSheetImporterImpl");
-                ;
+                var t = typeof(AssetDatabase).Assembly.GetType("UnityEditor.UIElements.StyleSheets.StyleSheetImporterImpl");
                 var i = Activator.CreateInstance(t);
                 var m = t.GetMethod("Import", BindingFlags.Public | BindingFlags.Instance);
                 m?.Invoke(i, new object[] { asset, str });
@@ -252,10 +108,71 @@ namespace NatsunekoLaboratory.UStyled
             return asset;
         }
 
-        private static List<string> GetVisualElementAssets(VisualTreeAsset asset)
+
+        public (string VisualTree, string StyleSheet) CompileAsString(VisualTreeAsset asset, CompileMode mode = CompileMode.Jit)
         {
-            var getter = typeof(VisualTreeAsset).GetProperty("visualElementAssets", BindingFlags.Instance | BindingFlags.NonPublic);
+            switch (mode)
+            {
+                case CompileMode.Static:
+                    return CompileWithStaticMode(asset);
+
+                case CompileMode.Jit:
+                    return CompileWithJitMode(asset);
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
+            }
+        }
+
+        private (string VisualTree, string StyleSheet) CompileWithStaticMode(VisualTreeAsset asset)
+        {
+            _container.Clear();
+
+            var sb = new StringBuilder();
+
+            foreach (var rule in _rules.Where(w => w is IStaticRule).Cast<IStaticRule>())
+                rule.Apply(_configuration, _container, "");
+
+            var content = GetVisualTreeContent(asset);
+            return (content, _container.ToString());
+        }
+
+        private (string VisualTree, string StyleSheet) CompileWithJitMode(VisualTreeAsset asset)
+        {
+            _container.Clear();
+
+            var selectors = GetClassNamesFromVisualTreeAsset(asset);
+
+            foreach (var selector in selectors)
+            {
+                var rule = _rules.FirstOrDefault(w => w.IsMatchToSelector(selector));
+                if (rule == null)
+                    continue;
+
+                rule.Apply(_configuration, _container, selector);
+            }
+
+
+            var content = _container.TransformHtml(GetVisualTreeContent(asset));
+            return (content, _container.ToString());
+        }
+
+        private List<string> GetClassNamesFromVisualTreeAsset(VisualTreeAsset asset)
+        {
+            if (_preprocessor == UStyledPreprocessor.SerializedValue)
+                return GetClassNamesFromVisualTreeAssetString(asset);
+
+            if (_preprocessor == UStyledPreprocessor.DeserializedValue)
+                return GetClassNamesFromVisualTreeAssetObject(asset);
+
+            return new List<string>();
+        }
+
+        private static List<string> GetClassNamesFromVisualTreeAssetObject(VisualTreeAsset asset)
+        {
             var classes = new List<string>();
+
+            var getter = typeof(VisualTreeAsset).GetProperty("visualElementAssets", BindingFlags.Instance | BindingFlags.NonPublic);
 
             if (getter?.GetValue(asset) is IList values)
             {
@@ -266,6 +183,37 @@ namespace NatsunekoLaboratory.UStyled
             }
 
             return classes;
+        }
+
+        private static List<string> GetClassNamesFromVisualTreeAssetString(VisualTreeAsset asset)
+        {
+            try
+            {
+                var content = GetVisualTreeContent(asset);
+                var document = XDocument.Parse(content);
+                var values = document.Descendants()
+                                     .Where(w => w.Attribute("class") != null && !string.IsNullOrWhiteSpace((string)w.Attribute("class")))
+                                     .Select(w => w.Attribute("class")!.Value)
+                                     .ToList();
+
+                return values.SelectMany(w => Splitter.Matches(w).Select(m => m.Value)).Distinct().ToList().ToList();
+            }
+            catch (Exception e)
+            {
+                // ignored
+            }
+
+            return new List<string>();
+        }
+
+        private static string GetVisualTreeContent(VisualTreeAsset asset)
+        {
+            var path = AssetDatabase.GetAssetPath(asset);
+
+            using var sr = new StreamReader(path);
+            var content = sr.ReadToEnd();
+
+            return content;
         }
 
         private static string ToKebabCase(string value)

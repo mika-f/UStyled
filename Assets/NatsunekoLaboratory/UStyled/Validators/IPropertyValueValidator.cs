@@ -3,10 +3,12 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 // ------------------------------------------------------------------------------------------
 
+using NatsunekoLaboratory.UStyled.Configurations;
+
 namespace NatsunekoLaboratory.UStyled.Validators
 {
     public interface IPropertyValueValidator
     {
-        bool IsValid(string value);
+        bool IsValid(IConfigurationProvider configuration, string value);
     }
 }

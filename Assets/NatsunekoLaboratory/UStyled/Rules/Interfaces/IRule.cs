@@ -3,15 +3,18 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 // ------------------------------------------------------------------------------------------
 
+using NatsunekoLaboratory.UStyled.Compiler;
 using NatsunekoLaboratory.UStyled.Configurations;
 
-namespace NatsunekoLaboratory.UStyled.Validators
+namespace NatsunekoLaboratory.UStyled.Rules.Interfaces
 {
-    public class PassThroughValidator : IPropertyValueValidator
+    public interface IRule
     {
-        public bool IsValid(IConfigurationProvider configuration, string value)
-        {
-            return true;
-        }
+        bool TransformHtml { get; }
+
+
+        bool IsMatchToSelector(string selector);
+
+        void Apply(IConfigurationProvider configuration, ClassContainer container, string selector);
     }
 }
