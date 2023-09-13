@@ -1,206 +1,141 @@
 # UStyled
 
-UStyled: UnoCSS inspired instant on-demand atomic USS engine.
+UStyled: A Utility-First USS Framework for UI Toolkit, inspired by [Tailwind CSS](https://tailwindcss.com/).
 
-## Usage
+## Installation
 
-### JIT Compile
+### OpenUPM
 
-UStyled provides JIT compile feature. You can compile USS on-demand.
-Example:
+```
+$ openupm add cat.natsuneko.ustyled
+```
+
+## Description
+
+### What is UStyled?
+
+UStyled is a utility-first USS framework for UI Toolkit, inspired by [Tailwind CSS](https://tailwindcss.com/).  
+You can styling UI Elements classes like `flex`, `pt-4`, `text-center` and `rotate-90`, and it can be composed to build any design, directly in your markup.
+
+### Supported Styles
+
+UStyled supports the following styles:
+
+- TailwindCSS - `flex`, `pt-4`, `text-center`, `rotate-90` for static values, `top-[124px]`, `before:content-['']` for arbitrary values
+- UnoCSS - `grid-cols-[auto,1fr,30px]`, `p-5px`, `mt-[0.3px]`, `bg-hex-b2a8bb` and `bg-[#b2a8bb]` for static and arbitrary values
+- StylifyCSS - `height:120px`, `width:auto`, `hover:scale:1.1` and `font-size:12px` for static and arbitrary values
+
+## How to Use
+
+### JIT Mode
+
+JIT Mode enables UStyled to compile USS on the fly.  
+You can **also** use dynamic styles like `top-[124px]` and `before:content-['']` in this mode.
+
+First, you need to add the `UStyledCompiler` into your C# script.
 
 ```csharp
-using NatsunekoLaboratory.UStyled;
-using NatsunekoLaboratory.UStyled.Configurations;
-using NatsunekoLaboratory.UStyled.Presets;
+// NOTE: USTYLED preprocessor directive are defined by UStyled, it is useful to avoid compile error when you distribute your project to others.
+#if USTYLED
+    using UStyled;
+    using UStyled.Configurations;
+#endif
 
-using UnityEditor;
-using UnityEditor.UIElements;
-
-using UnityEngine;
-using UnityEngine.UIElements;
-
-namespace NatsunekoLaboratory.Examples.UStyled
+public class SomeEditorWindow : EditorWindow
 {
-    public abstract class SomeEditorWindow : EditorWindow
+#if USTYLED
+    private static readonly UStyledCompiler _compiler;
+#endif
+
+    // ...
+
+#if USTYLED
+    static SomeEditorWindow()
     {
-        private static readonly UStyledCompiler UStyled;
+        _compiler = new UStyledCompilerBuilder()
+            .UsePreprocessor(UStyledPreprocessor.SerializedValue)
+            .UsePresets(new StylifyPreset())
+            .Build();
+    }
+#endif
 
-        private SerializedObject _so;
+    // ...
 
-        static SomeEditorWindow()
-        {
-            // create a instance of UStyledCompiler with configurations
-            UStyled = new UStyledCompiler().DefineConfig(new ConfigurationProvider { Presets = { new PrimitivePreset() } });
-        }
+    private void CreateGUI()
+    {
+        // ...
+#if USTYLED
+        var (uxml, uss) = _compiler.CompileAsAsset(asset); // asset is VisualTreeAsset
+        rootVisualElement.styleSheets.Add(uss);
 
-        private static T LoadAssetByGuid<T>(string guid) where T : Object
-        {
-            return AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guid));
-        }
-
-        // ReSharper disable once InconsistentNaming
-        public void CreateGUI()
-        {
-            _so = new SerializedObject(this);
-            _so.Update();
-
-            var root = rootVisualElement;
-
-            // load target uxml
-            var xaml = LoadAssetByGuid<VisualTreeAsset>("...");
-            var tree = xaml.CloneTree();
-
-            // compile stylesheet and assign it
-            root.styleSheets.Add(UStyled.JitCompile(xaml));
-
-            tree.Bind(_so);
-            root.Add(tree);
-        }
+        var tree = uxml.CloneTree();
+        rootVisualElement.Add(tree);
+#endif
     }
 }
 ```
 
-### Pre Compile
+Then, you can use UStyled in your UXML.
 
-If you want to distribute your editor extension with UStyled, you can pre-compile USS.  
-Example:
-
-```csharp
-using System.IO;
-
-using NatsunekoLaboratory.UStyled;
-using NatsunekoLaboratory.UStyled.Configurations;
-using NatsunekoLaboratory.UStyled.Presets;
-
-using UnityEditor;
-using UnityEditor.UIElements;
-
-using UnityEngine;
-using UnityEngine.UIElements;
-
-namespace NatsunekoLaboratory.Examples.UStyled
-{
-    public abstract class UStyledStaticGeneration
-    {
-        private static readonly UStyledCompiler UStyled;
-
-        private SerializedObject _so;
-
-        static UStyledStaticGeneration()
-        {
-            // create a instance of UStyledCompiler with configurations
-            UStyled = new UStyledCompiler().DefineConfig(new ConfigurationProvider { Presets = { new PrimitivePreset() } });
-        }
-
-        private static T LoadAssetByGuid<T>(string guid) where T : Object
-        {
-            return AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guid));
-        }
-
-        [MenuItem("Natsuneko Laboratory/UStyled/Generate")]
-        public static void Generate()
-        {
-            var xaml = LoadAssetByGuid<VisualTreeAsset>("...");
-            var uss = UStyled.Compile(xaml);
-            File.WriteAllText("/path/to/output.uss", uss);
-        }
-    }
-}
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:engine="UnityEngine.UIElements"
+  xmlns:editor="UnityEditor.UIElements"
+  xsi:noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd"
+  xsi:schemaLocation="UnityEngine.UIElements ../../../../UIElementsSchema/UnityEngine.UIElements.xsd
+                      UnityEditor.UIElements ../../../../UIElementsSchema/UnityEditor.UIElements.xsd"
+>
+  <engine:VisualElement class="margin-left:auto margin-right:auto padding-left:16px padding-right:16px padding-top:8px padding-bottom:8px width:100%">
+    <!-- ... -->
+  </engine:VisualElement>
+</engine:UXML>
 ```
 
-## USS Classes
+### Static Mode
 
-UStyled provides some classes to [Windi CSS](https://windicss.org/) and [Tailwind CSS](https://tailwindcss.com/).  
-But UStyled does not provide all classes by limitation of USS.
+Static Mode enabled UStyled to compile USS at compile time.  
+You can **only** use static styles like `flex`, `pt-4`, `text-center` and `rotate-90` in this mode.  
+This mode is useful when you want to development performance.
 
-## Presets
-
-You can define custom-rules with presets.
-
-### Static Rules
-
-Static Rules is a rule that is defined in source code.  
-Example:
-
-```csharp
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
-
-using NatsunekoLaboratory.UStyled.Rules;
-
-namespace NatsunekoLaboratory.UStyled.Presets
-{
-    public class AlignPreset : IPreset
-    {
-        public Dictionary<string, IRule> StaticRules => new Dictionary<string, IRule>
-        {
-            // base
-            { "text-left", new StaticRule { ExtUnityTextAlign = TextAlign.MiddleLeft } },
-            { "text-center", new StaticRule { ExtUnityTextAlign = TextAlign.MiddleCenter } },
-            { "text-right", new StaticRule { ExtUnityTextAlign = TextAlign.MiddleRight } },
-
-            // extensions
-            { "text-upper-left", new StaticRule { ExtUnityTextAlign = TextAlign.UpperLeft } },
-            { "text-middle-left", new StaticRule { ExtUnityTextAlign = TextAlign.MiddleLeft } },
-            { "text-lower-left", new StaticRule { ExtUnityTextAlign = TextAlign.LowerLeft } },
-            { "text-upper-center", new StaticRule { ExtUnityTextAlign = TextAlign.UpperCenter } },
-            { "text-middle-center", new StaticRule { ExtUnityTextAlign = TextAlign.MiddleCenter } },
-            { "text-lower-center", new StaticRule { ExtUnityTextAlign = TextAlign.LowerCenter } },
-            { "text-upper-right", new StaticRule { ExtUnityTextAlign = TextAlign.UpperRight } },
-            { "text-middle-right", new StaticRule { ExtUnityTextAlign = TextAlign.MiddleRight } },
-            { "text-lower-right", new StaticRule { ExtUnityTextAlign = TextAlign.LowerRight } }
-        };
-
-        public Dictionary<Regex, IRule> DynamicRules => new Dictionary<Regex, IRule>();
-    }
-}
+```diff
++        var (uxml, uss) = _compiler.CompileAsAsset(asset, CompilerMode.Static);
+-        var (uxml, uss) = _compiler.CompileAsAsset(asset);
 ```
 
-The above code defines some classes for text alignment.  
-`.text-left` generates `text-align: left;` and `.text-upper-left` generates `text-align: upper-left;`.
+### Production Mode
 
-### Dynamic Rules
-
-Dynamic Rules is a rule that is defined in runtime.
+If you want to use UStyled in production, you can write the _compiled_ UXML and USS into files.
 
 ```csharp
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
+var (uxml, uss) = _compiler.CompileAsString(asset);                      // JIT Mode
+var (uxml, uss) = _compiler.CompileAsString(asset, CompilerMode.Static); // Static Mode
 
-using NatsunekoLaboratory.UStyled.Converters;
-using NatsunekoLaboratory.UStyled.Rules;
-
-namespace NatsunekoLaboratory.UStyled.Presets
-{
-    public class SpacingPreset : IPreset
-    {
-        public Dictionary<string, IRule> StaticRules => new Dictionary<string, IRule>(); // EMPTY
-
-        public Dictionary<Regex, IRule> DynamicRules => new Dictionary<Regex, IRule>
-        {
-            { new Regex(@"^p-([+-]?([0-9]*[.])?[0-9]+)$"), new DynamicRule { Padding = "$1", Converter = new UnitConverter() } },
-            { new Regex(@"^px-([+-]?([0-9]*[.])?[0-9]+)$"), new DynamicRule { PaddingLeft = "$1", PaddingRight = "$1", Converter = new UnitConverter() } },
-            { new Regex(@"^py-([+-]?([0-9]*[.])?[0-9]+)$"), new DynamicRule { PaddingTop = "$1", PaddingBottom = "$1", Converter = new UnitConverter() } },
-            { new Regex(@"^pt-([+-]?([0-9]*[.])?[0-9]+)$"), new DynamicRule { PaddingTop = "$1", Converter = new UnitConverter() } },
-            { new Regex(@"^pb-([+-]?([0-9]*[.])?[0-9]+)$"), new DynamicRule { PaddingBottom = "$1", Converter = new UnitConverter() } },
-            { new Regex(@"^pl-([+-]?([0-9]*[.])?[0-9]+)$"), new DynamicRule { PaddingLeft = "$1", Converter = new UnitConverter() } },
-            { new Regex(@"^pr-([+-]?([0-9]*[.])?[0-9]+)$"), new DynamicRule { PaddingRight = "$1", Converter = new UnitConverter() } },
-            { new Regex(@"^p-(.+)$"), new DynamicRule { Padding = "$1", Converter = new UnitConverter() } },
-            { new Regex(@"^px-(.+)$"), new DynamicRule { PaddingLeft = "$1", PaddingRight = "$1", Converter = new UnitConverter() } },
-            { new Regex(@"^py-(.+)$"), new DynamicRule { PaddingTop = "$1", PaddingBottom = "$1", Converter = new UnitConverter() } },
-            { new Regex(@"^pt-(.+)$"), new DynamicRule { PaddingTop = "$1", Converter = new UnitConverter() } },
-            { new Regex(@"^pb-(.+)$"), new DynamicRule { PaddingBottom = "$1", Converter = new UnitConverter() } },
-            { new Regex(@"^pl-(.+)$"), new DynamicRule { PaddingLeft = "$1", Converter = new UnitConverter() } },
-            { new Regex(@"^pr-(.+)$"), new DynamicRule { PaddingRight = "$1", Converter = new UnitConverter() } }
-        };
-    }
-}
+File.WriteAllText("path/to/uxml", uxml);
+File.WriteAllText("path/to/uss", uss);
 ```
 
-The above code defines some classes for padding.  
-`.p-1` generates `padding: 4px;` and `.p-1.5` generates `padding: 6px;`.  
-All values are converted by `Converter` (default: pass-through).
+By exporting the compiled UXML and USS, you can use any styles without UStyled.
+
+### Compile Configuration
+
+By default, UStyled uses the random string for the class selector after compilation.  
+If you want to use the other selector, you can use `UStyledCompilerBuilder` to configure the compiler.
+
+```csharp
+_compiler = new UStyledCompilerBuilder()
+    .UsePreprocessor(UStyledPreprocessor.SerializedValue)
+    .UsePresets(new StylifyPreset())
+    .UseSelectorConvention(new YourCustomSelectorConvention()) // must implement IUStyledSelectorConvention interface
+    .Build();
+```
+
+Default selector convention is `RandomAlphabeticalSelectorConvention` and it generates the selector like `u-styled-xxxxx`.
+UStyled provides the following naming conventions as built-in:
+
+- `RandomAlphabeticalSelectorConvention`
+- `Html4CompatSelectorConvention`
 
 ## License
 
