@@ -12,6 +12,10 @@ namespace Assets.NatsunekoLaboratory.UStyled
         [InitializeOnLoadMethod]
         public static void InitializeEditor()
         {
+            var groups = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            if (groups.Contains("USTYLED"))
+                return;
+
             PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, "USTYLED");
         }
     }
