@@ -15,6 +15,7 @@ namespace NatsunekoLaboratory.UStyled.Compiler
     {
         private readonly Dictionary<string, string> _mappings = new Dictionary<string, string>();
         private readonly Dictionary<string, (string Value, bool Transform)> _selectors = new Dictionary<string, (string Value, bool Transform)>();
+        private static readonly Random Random = new Random();
 
         public void Clear()
         {
@@ -75,7 +76,6 @@ namespace NatsunekoLaboratory.UStyled.Compiler
             if (_mappings.TryGetValue(original, out var name))
                 return name;
 
-            var random = new Random();
             var sb = new StringBuilder();
             string str;
 
@@ -85,7 +85,7 @@ namespace NatsunekoLaboratory.UStyled.Compiler
 
                 for (var i = 0; i < 10; i++)
                 {
-                    var n = random.Next(alphanumerical.Length);
+                    var n = Random.Next(alphanumerical.Length);
                     sb.Append(alphanumerical[n]);
                 }
 
