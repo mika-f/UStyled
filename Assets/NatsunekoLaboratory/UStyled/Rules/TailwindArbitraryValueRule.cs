@@ -14,7 +14,7 @@ namespace NatsunekoLaboratory.UStyled.Rules
 {
     public class TailwindArbitraryValueRule : IDynamicRule
     {
-        private static readonly Regex TailwindArbitraryValueRegex = new(@"^((?<screen>[a-z0-9]+):)?((?<pseudo>[a-z0-9]+):)?((?<selector>[a-z0-9-]+)+)(\[(?<arbitray>.*)\])?$", RegexOptions.Compiled);
+        private static readonly Regex TailwindArbitraryValueRegex = new Regex(@"^((?<screen>[a-z0-9]+):)?((?<pseudo>[a-z0-9]+):)?((?<selector>[a-z0-9-]+)+)(\[(?<arbitray>.*)\])?$", RegexOptions.Compiled);
 
         public bool TransformHtml => true;
 

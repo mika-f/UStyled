@@ -13,8 +13,8 @@ namespace NatsunekoLaboratory.UStyled.Compiler
 {
     public class ClassContainer
     {
-        private readonly Dictionary<string, string> _mappings = new();
-        private readonly Dictionary<string, (string Value, bool Transform)> _selectors = new();
+        private readonly Dictionary<string, string> _mappings = new Dictionary<string, string>();
+        private readonly Dictionary<string, (string Value, bool Transform)> _selectors = new Dictionary<string, (string Value, bool Transform)>();
 
         public void Clear()
         {
@@ -28,8 +28,13 @@ namespace NatsunekoLaboratory.UStyled.Compiler
                 return;
 
             var sb = new StringBuilder();
+#if CSHARP_9_OR_LATER
             foreach (var (key, val) in value)
                 sb.Append($"{key}: {val};");
+#else
+            foreach (var pair in value)
+                sb.Append($"{pair.Key}: {pair.Value}");
+#endif
 
             _selectors[selector] = (sb.ToString().Replace(Environment.NewLine, ""), transform);
         }
@@ -39,9 +44,13 @@ namespace NatsunekoLaboratory.UStyled.Compiler
             if (_mappings.Count == 0)
                 return source;
 
+#if CSHARP_9_OR_LATER
             foreach (var (selector, unique) in _mappings)
                 source = source.Replace(selector, unique.Contains(":") ? unique.Substring(0, unique.IndexOf(":", StringComparison.Ordinal)) : unique);
-
+#else
+            foreach (var mapping in _mappings)
+                source = source.Replace(mapping.Key, mapping.Value.Contains(":") ? mapping.Value.Substring(0, mapping.Value.IndexOf(":", StringComparison.Ordinal)) : mapping.Value);
+#endif
             return source;
         }
 
@@ -49,9 +58,13 @@ namespace NatsunekoLaboratory.UStyled.Compiler
         {
             var sb = new StringBuilder();
 
+#if CSHARP_9_OR_LATER
             foreach (var (selector, (value, _)) in _selectors)
                 sb.Append($".{selector} {{ {value} }}");
-
+#else
+            foreach (var selector in _selectors)
+                sb.Append($".{selector.Key} {{ {selector.Value.Value} }}");
+#endif
             return sb.ToString();
         }
 
