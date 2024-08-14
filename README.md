@@ -100,8 +100,8 @@ You can **only** use static styles like `flex`, `pt-4`, `text-center` and `rotat
 This mode is useful when you want to development performance.
 
 ```diff
-+        var (uxml, uss) = _compiler.CompileAsAsset(asset, CompilerMode.Static);
 -        var (uxml, uss) = _compiler.CompileAsAsset(asset);
++        var (uxml, uss) = _compiler.CompileAsAsset(asset, CompilerMode.Static);
 ```
 
 ### Production Mode
@@ -136,6 +136,20 @@ UStyled provides the following naming conventions as built-in:
 
 - `RandomAlphabeticalSelectorConvention`
 - `Html4CompatSelectorConvention`
+
+### Presets
+
+UStyled provides the following presets:
+
+- `TailwindPreset` - Preset for TailwindCSS
+- `StylifyPreset` - Preset for StylifyCSS
+
+```csharp
+_compiler = new UStyledCompilerBuilder()
+    .UsePreprocessor(UStyledPreprocessor.SerializedValue)
+    .UsePresets(new TailwindPreset())
+    .Build();
+```
 
 ## License
 

@@ -12,7 +12,7 @@ namespace NatsunekoLaboratory.UStyled.Configurations.Presets
 {
     public class StylifyPreset : IPreset
     {
-        public List<IRule> Rules => new List<IRule>
+        public List<IRule> Rules => new()
         {
             new RawSelectorPropertyRule()
         };

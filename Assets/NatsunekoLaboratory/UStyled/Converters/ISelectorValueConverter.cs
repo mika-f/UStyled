@@ -5,16 +5,15 @@
 
 using System.Collections.Generic;
 
-namespace NatsunekoLaboratory.UStyled.Configurations
+using NatsunekoLaboratory.UStyled.Configurations;
+using NatsunekoLaboratory.UStyled.Rules.Interfaces;
+
+namespace NatsunekoLaboratory.UStyled.Converters
 {
-    public interface IConfigurationProvider
+    public interface ISelectorValueConverter
     {
-        public uint DefaultFontSize { get; }
+        List<KeyValuePair<string, object>> ConvertToValue(IDynamicRule rule, IConfigurationProvider configuration, string selector);
 
-        public IReadOnlyDictionary<string, string> ColorVariants { get; }
-
-        public IReadOnlyDictionary<string, float> SizeVariants { get; }
-
-        public IReadOnlyDictionary<string, string> Variables { get; }
+        bool IsAcceptedSelector(string selector);
     }
 }

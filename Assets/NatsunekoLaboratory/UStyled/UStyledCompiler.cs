@@ -32,7 +32,7 @@ namespace NatsunekoLaboratory.UStyled
     /// </summary>
     public class UStyledCompiler
     {
-        private static readonly Regex Splitter = new Regex(@"[^\s""']+|""([^""]*)""|'([^']*)'", RegexOptions.Compiled);
+        private static readonly Regex Splitter = new(@"[^\s""']+|""([^""]*)""|'([^']*)'", RegexOptions.Compiled);
 
         private readonly ConfigurationProvider _configuration;
         private readonly ClassContainer _container;
@@ -95,7 +95,7 @@ namespace NatsunekoLaboratory.UStyled
 
             try
             {
-                var t = typeof(AssetDatabase).Assembly.GetType("UnityEditor.StyleSheets.StyleSheetImporterImpl") ?? typeof(AssetDatabase).Assembly.GetType("UnityEditor.UIElements.StyleSheets.StyleSheetImporterImpl");
+                var t = typeof(AssetDatabase).Assembly.GetType("UnityEditor.UIElements.StyleSheets.StyleSheetImporterImpl");
                 var i = Activator.CreateInstance(t);
                 var m = t.GetMethod("Import", BindingFlags.Public | BindingFlags.Instance);
                 m?.Invoke(i, new object[] { asset, str });
@@ -128,8 +128,6 @@ namespace NatsunekoLaboratory.UStyled
         {
             _container.Clear();
 
-            var sb = new StringBuilder();
-
             foreach (var rule in _rules.Where(w => w is IStaticRule).Cast<IStaticRule>())
                 rule.Apply(_configuration, _container, "");
 
@@ -159,13 +157,17 @@ namespace NatsunekoLaboratory.UStyled
 
         private List<string> GetClassNamesFromVisualTreeAsset(VisualTreeAsset asset)
         {
-            if (_preprocessor == UStyledPreprocessor.SerializedValue)
-                return GetClassNamesFromVisualTreeAssetString(asset);
+            switch (_preprocessor)
+            {
+                case UStyledPreprocessor.SerializedValue:
+                    return GetClassNamesFromVisualTreeAssetString(asset);
 
-            if (_preprocessor == UStyledPreprocessor.DeserializedValue)
-                return GetClassNamesFromVisualTreeAssetObject(asset);
+                case UStyledPreprocessor.DeserializedValue:
+                    return GetClassNamesFromVisualTreeAssetObject(asset);
 
-            return new List<string>();
+                default:
+                    return new List<string>();
+            }
         }
 
         private static List<string> GetClassNamesFromVisualTreeAssetObject(VisualTreeAsset asset)
@@ -193,23 +195,10 @@ namespace NatsunekoLaboratory.UStyled
                 var document = XDocument.Parse(content);
                 var values = document.Descendants()
                                      .Where(w => w.Attribute("class") != null && !string.IsNullOrWhiteSpace((string)w.Attribute("class")))
-                                     .Select(w => w.Attribute("class")?.Value)
+                                     .Select(w => w.Attribute("class")!.Value)
                                      .ToList();
 
-#if CSHARP_9_OR_LATER
-                return values.SelectMany(w => Splitter.Matches(w).Select(m => m.Value)).Distinct().ToList();
-#else
-                return values.SelectMany(w =>
-                {
-                    var matches = Splitter.Matches(w);
-                    var items = new List<string>();
-
-                    foreach (Match match in matches)
-                        items.Add(match.Value);
-
-                    return items;
-                }).Distinct().ToList();
-#endif
+                return values.SelectMany(w => Splitter.Matches(w).Select(m => m.Value)).Distinct().ToList().ToList();
             }
             catch (Exception e)
             {
@@ -223,18 +212,10 @@ namespace NatsunekoLaboratory.UStyled
         {
             var path = AssetDatabase.GetAssetPath(asset);
 
-#if CSHARP_9_OR_LATER
             using var sr = new StreamReader(path);
-#else
-            using (var sr = new StreamReader(path))
-            {
-#endif
-                var content = sr.ReadToEnd();
+            var content = sr.ReadToEnd();
 
-                return content;
-#if !CSHARP_9_OR_LATER
-            }
-#endif
+            return content;
         }
 
         private static string ToKebabCase(string value)

@@ -22,7 +22,7 @@ namespace NatsunekoLaboratory.UStyled.Rules
          *
          * ref: https://stylifycss.com/en/docs/get-started/
          */
-        private static readonly Regex PropertySelectorRegex = new Regex("^(((?<screen>[a-z_-]+):)?(((?<pseudo>[a-z_-]+):)?(?<property>[a-z_-]+):(?<value>.+?)))$", RegexOptions.Compiled | RegexOptions.Multiline);
+        private static readonly Regex PropertySelectorRegex = new("^(((?<screen>[a-z_-]+):)?(((?<pseudo>[a-z_-]+):)?(?<property>[a-z_-]+):(?<value>.+?)))$", RegexOptions.Compiled | RegexOptions.Multiline);
 
         public bool TransformHtml => true;
 
@@ -46,7 +46,7 @@ namespace NatsunekoLaboratory.UStyled.Rules
                 var property = match.Groups["property"].Value;
                 var value = match.Groups["value"].Value;
 
-                container.Add(container.GetUniqueName(selector, pseudo), new List<KeyValuePair<string, object>> { new KeyValuePair<string, object>(property, value) }, TransformHtml);
+                container.Add(container.GetUniqueName(selector, pseudo), new List<KeyValuePair<string, object>> { new(property, value) }, TransformHtml);
             }
 
             if (hasProperty && hasValue)
@@ -54,7 +54,7 @@ namespace NatsunekoLaboratory.UStyled.Rules
                 var property = match.Groups["property"].Value;
                 var value = match.Groups["value"].Value;
 
-                container.Add(container.GetUniqueName(selector), new List<KeyValuePair<string, object>> { new KeyValuePair<string, object>(property, value) }, TransformHtml);
+                container.Add(container.GetUniqueName(selector), new List<KeyValuePair<string, object>> { new(property, value) }, TransformHtml);
             }
         }
     }

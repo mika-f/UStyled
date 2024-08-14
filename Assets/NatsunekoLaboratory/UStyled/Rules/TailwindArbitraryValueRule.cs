@@ -3,7 +3,6 @@
 //  Licensed under the MIT License. See LICENSE in the project root for license information.
 // ------------------------------------------------------------------------------------------
 
-using System;
 using System.Text.RegularExpressions;
 
 using NatsunekoLaboratory.UStyled.Compiler;
@@ -14,7 +13,7 @@ namespace NatsunekoLaboratory.UStyled.Rules
 {
     public class TailwindArbitraryValueRule : IDynamicRule
     {
-        private static readonly Regex TailwindArbitraryValueRegex = new Regex(@"^((?<screen>[a-z0-9]+):)?((?<pseudo>[a-z0-9]+):)?((?<selector>[a-z0-9-]+)+)(\[(?<arbitray>.*)\])?$", RegexOptions.Compiled);
+        private static readonly Regex TailwindArbitraryValueRegex = new(@"^((?<screen>[a-z0-9]+):)?((?<pseudo>[a-z0-9]+):)?((?<selector>[a-z0-9-]+)+)(\[(?<arbitray>.*)\])?$", RegexOptions.Compiled);
 
         public bool TransformHtml => true;
 
@@ -26,7 +25,7 @@ namespace NatsunekoLaboratory.UStyled.Rules
 
         public void Apply(IConfigurationProvider configuration, ClassContainer container, string selector)
         {
-            throw new NotImplementedException();
+            //
         }
     }
 }

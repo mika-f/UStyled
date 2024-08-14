@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "NatsunekoLaboratory.UStyled.SourceGenerator": {
+      "commandName": "Project"
+    },
+    "Debug with SubProject": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "..\\NatsunekoLaboratory.UStyled.SourceGenerator.Tests\\NatsunekoLaboratory.UStyled.SourceGenerator.Tests.csproj"
+    }
+  }
+}
