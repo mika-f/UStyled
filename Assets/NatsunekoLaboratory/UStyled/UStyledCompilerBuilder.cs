@@ -27,6 +27,8 @@ namespace NatsunekoLaboratory.UStyled
 
         public IReadOnlyCollection<IRule> Rules { get; private init; }
 
+        public IReadOnlyCollection<string> AlwaysGeneratedClasses { get; private init; }
+
         public UStyledCompilerBuilder UsePreprocessor(UStyledPreprocessor preprocessor)
         {
             return this with { Preprocessor = preprocessor };
@@ -53,6 +55,14 @@ namespace NatsunekoLaboratory.UStyled
             r.AddRange(rules);
 
             return this with { Rules = r.AsReadOnly() };
+        }
+
+        public UStyledCompilerBuilder UseAlwaysIncluded(params string[] classes)
+        {
+            var c = new List<string>(AlwaysGeneratedClasses ?? new List<string>());
+            c.AddRange(classes);
+
+            return this with { AlwaysGeneratedClasses = c.AsReadOnly() };
         }
 
         public UStyledCompilerBuilder SetDefaultFontSize(uint size)

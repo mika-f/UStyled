@@ -50,10 +50,20 @@ namespace NatsunekoLaboratory.UStyled
 
         public (VisualTreeAsset VisualTree, StyleSheet StyleSheet) CompileAsAsset(VisualTreeAsset asset, CompileMode mode = CompileMode.Jit)
         {
-            var (uxml, uss) = CompileAsString(asset, mode);
+            var (uxml, uss) = CompileAsString(new List<VisualTreeAsset> { asset }, mode);
 
             return (
-                CompileVisualTreeFromString(uxml),
+                CompileVisualTreeFromString(uxml[0]),
+                CompileStyleSheetFromString(uss)
+            );
+        }
+
+        public (List<VisualTreeAsset> VisualTree, StyleSheet StyleSheet) CompileAsAsset(List<VisualTreeAsset> assets, CompileMode mode = CompileMode.Jit)
+        {
+            var (uxml, uss) = CompileAsString(assets, mode);
+
+            return (
+                uxml.Select(CompileVisualTreeFromString).ToList(),
                 CompileStyleSheetFromString(uss)
             );
         }
@@ -111,6 +121,12 @@ namespace NatsunekoLaboratory.UStyled
 
         public (string VisualTree, string StyleSheet) CompileAsString(VisualTreeAsset asset, CompileMode mode = CompileMode.Jit)
         {
+            var (uxml, uss) = CompileAsString(new List<VisualTreeAsset> { asset }, mode);
+            return (uxml[0], uss);
+        }
+
+        public (List<string> VisualTree, string StyleSheet) CompileAsString(List<VisualTreeAsset> asset, CompileMode mode = CompileMode.Jit)
+        {
             switch (mode)
             {
                 case CompileMode.Static:
@@ -124,22 +140,22 @@ namespace NatsunekoLaboratory.UStyled
             }
         }
 
-        private (string VisualTree, string StyleSheet) CompileWithStaticMode(VisualTreeAsset asset)
+        private (List<string> VisualTree, string StyleSheet) CompileWithStaticMode(List<VisualTreeAsset> assets)
         {
             _container.Clear();
 
             foreach (var rule in _rules.Where(w => w is IStaticRule).Cast<IStaticRule>())
                 rule.Apply(_configuration, _container, "");
 
-            var content = GetVisualTreeContent(asset);
+            var content = assets.Select(GetVisualTreeContent).ToList();
             return (content, _container.ToString());
         }
 
-        private (string VisualTree, string StyleSheet) CompileWithJitMode(VisualTreeAsset asset)
+        private (List<string> VisualTrees, string StyleSheet) CompileWithJitMode(List<VisualTreeAsset> assets)
         {
             _container.Clear();
 
-            var selectors = GetClassNamesFromVisualTreeAsset(asset);
+            var selectors = assets.SelectMany(GetClassNamesFromVisualTreeAsset).Distinct();
 
             foreach (var selector in selectors)
             {
@@ -150,8 +166,17 @@ namespace NatsunekoLaboratory.UStyled
                 rule.Apply(_configuration, _container, selector);
             }
 
+            foreach (var selector in _configuration.AlwaysIncluded ?? new List<string>())
+            {
+                var rule = _rules.FirstOrDefault(w => w.IsMatchToSelector(selector));
+                if (rule == null)
+                    continue;
 
-            var content = _container.TransformHtml(GetVisualTreeContent(asset));
+                rule.Apply(_configuration, _container, selector);
+            }
+
+
+            var content = assets.Select(w => _container.TransformHtml(GetVisualTreeContent(w))).ToList();
             return (content, _container.ToString());
         }
 
@@ -210,6 +235,9 @@ namespace NatsunekoLaboratory.UStyled
 
         private static string GetVisualTreeContent(VisualTreeAsset asset)
         {
+            if (asset == null)
+                return "";
+
             var path = AssetDatabase.GetAssetPath(asset);
 
             using var sr = new StreamReader(path);

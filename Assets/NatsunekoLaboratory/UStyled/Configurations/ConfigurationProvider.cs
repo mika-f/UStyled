@@ -15,11 +15,13 @@ namespace NatsunekoLaboratory.UStyled.Configurations
             ColorVariants = builder.ColorVariants;
             SizeVariants = builder.SizeVariants;
             Variables = builder.Variables;
+            AlwaysIncluded = builder.AlwaysGeneratedClasses;
         }
 
         public uint DefaultFontSize { get; }
         public IReadOnlyDictionary<string, string> ColorVariants { get; }
         public IReadOnlyDictionary<string, float> SizeVariants { get; }
         public IReadOnlyDictionary<string, string> Variables { get; }
+        public IReadOnlyCollection<string> AlwaysIncluded { get; }
     }
 }
