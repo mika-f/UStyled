@@ -33,7 +33,17 @@ namespace NatsunekoLaboratory.UStyled.Rules
             var hasPseudo = match.Groups["pseudo"].Success;
             var hasSelector = match.Groups["selector"].Success;
 
-            if (!hasScreen && !hasPseudo && hasSelector)
+            if (hasScreen && !hasPseudo && hasSelector)
+            {
+                var pseudo = match.Groups["screen"].Value;
+                var actualSelector = match.Groups["selector"].Value;
+                var rule = TailwindSelectors.Properties.FirstOrDefault(w => w.IsMatch(actualSelector));
+                if (rule != null)
+                    container.Add(container.GetUniqueName(selector, pseudo), rule.GetRule(this, configuration, actualSelector), TransformHtml);
+            }
+
+
+            if (hasSelector)
             {
                 var rule = TailwindSelectors.Properties.FirstOrDefault(w => w.IsMatch(selector));
                 if (rule != null) container.Add(container.GetUniqueName(selector), rule.GetRule(this, configuration, selector));
