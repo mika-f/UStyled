@@ -221,6 +221,57 @@ namespace NatsunekoLaboratory.UStyled.Rules
                 { "stretch", "stretch" }
             };
 
+            public static readonly Dictionary<string, string> FlexDirectionDefinitions = new()
+            {
+                { "col", "column" },
+                { "row", "row" },
+                { "col-reverse", "column-reverse" },
+                { "row-reverse", "row-reverse" }
+            };
+
+            public static readonly Dictionary<string, string> FlexDefinitions = new()
+            {
+                { "1", "1 1 0" },
+                { "auto", "1 1 auto" },
+                { "initial", "0 1 auto" },
+                { "none", "none" }
+            };
+
+            public static readonly Dictionary<string, string> JustifyContentDefinitions = new()
+            {
+                { "normal", "normal" },
+                { "start", "flex-start" },
+                { "end", "flex-end" },
+                { "center", "center" },
+                { "between", "space-between" },
+                { "around", "space-around" },
+                { "evenly", "space-evenly" },
+                { "stretch", "stretch" }
+            };
+
+            public static readonly Dictionary<string, string> TextAlignDefinitions = new()
+            {
+                { "left", "middle-left" },
+                { "right", "middle-right" },
+                { "center", "middle-center" },
+                { "upper-left", "upper-left" },
+                { "middle-left", "middle-left" },
+                { "lower-left", "lower-left" },
+                { "upper-center", "upper-center" },
+                { "middle-center", "middle-center" },
+                { "lower-center", "lower-center" },
+                { "upper-right", "upper-right" },
+                { "middle-right", "middle-right" },
+                { "lower-right", "lower-right" }
+            };
+
+            public static readonly Dictionary<string, string> TrueFalseDefinition = new()
+            {
+                { "0", "0" },
+                { "", "1" }
+            };
+
+
             // https://docs.unity3d.com/Manual/UIE-USS-Selectors-Pseudo-Classes.html
             public static Dictionary<string, string> PseudoElements = new()
             {
@@ -512,7 +563,6 @@ namespace NatsunekoLaboratory.UStyled.Rules
             public static TailwindSelector Overflow => new TailwindStaticValueSelector { SelectorPrefix = "overflow", Key = "overflow", Values = new List<string> { "hidden", "visible" } };
             public static TailwindSelector Position => new TailwindStaticValueSelector { SelectorPrefix = "", Key = "position", Values = new List<string> { "absolute", "relative" } };
             public static TailwindSelector InsetByPixel => new TailwindValueConvertSelector { SelectorPrefix = "inset", Converter = new TailwindBaseSizeConverter(BaseDefinitionSizes, 16, "px", "top", "left", "bottom", "right") };
-
             public static TailwindSelector InsetXByPixel => new TailwindValueConvertSelector { SelectorPrefix = "inset-x", Converter = new TailwindBaseSizeConverter(BaseDefinitionSizes, 16, "px", "left", "right") };
             public static TailwindSelector InsetYByPixel => new TailwindValueConvertSelector { SelectorPrefix = "inset-y", Converter = new TailwindBaseSizeConverter(BaseDefinitionSizes, 16, "px", "top", "bottom") };
             public static TailwindSelector TopByPixel => new TailwindValueConvertSelector { SelectorPrefix = "top", Converter = new TailwindBaseSizeConverter(BaseDefinitionSizes, 16, "px", "top") };
@@ -524,15 +574,23 @@ namespace NatsunekoLaboratory.UStyled.Rules
             public static TailwindSelector AlignContent => new TailwindValueConvertSelector { SelectorPrefix = "content", Converter = new TailwindKeyValueConverter(AlignContentDefinitions, "align-content") };
             public static TailwindSelector AlignItems => new TailwindValueConvertSelector { SelectorPrefix = "items", Converter = new TailwindKeyValueConverter(AlignItemsAndSelfDefinitions, "align-items") };
             public static TailwindSelector AlignSelf => new TailwindValueConvertSelector { SelectorPrefix = "self", Converter = new TailwindKeyValueConverter(AlignItemsAndSelfDefinitions, "align-self") };
-
+            public static TailwindSelector FlexDirection => new TailwindValueConvertSelector { SelectorPrefix = "flex", Converter = new TailwindKeyValueConverter(FlexDirectionDefinitions, "flex-direction") };
+            public static TailwindSelector FlexBasis => new TailwindValueConvertSelector { SelectorPrefix = "basis", Converter = new TailwindBaseSizeConverter(BaseDefinitionSizes, 16, "px", "flex-basis") };
+            public static TailwindSelector Flex => new TailwindValueConvertSelector { SelectorPrefix = "flex", Converter = new TailwindKeyValueConverter(FlexDefinitions, "flex") };
+            public static TailwindSelector FlexGrow => new TailwindValueConvertSelector { SelectorPrefix = "grow", Converter = new TailwindKeyValueConverter(TrueFalseDefinition, "flex-grow") };
+            public static TailwindSelector FlexShrink => new TailwindValueConvertSelector { SelectorPrefix = "shrink", Converter = new TailwindKeyValueConverter(TrueFalseDefinition, "flex-shrink") };
+            public static TailwindSelector JustifyContent => new TailwindValueConvertSelector { SelectorPrefix = "justify", Converter = new TailwindKeyValueConverter(JustifyContentDefinitions, "justify-content") };
+            public static TailwindSelector JustifyItems => new TailwindValueConvertSelector { SelectorPrefix = "justify-items", Converter = new TailwindKeyValueConverter(AlignContentDefinitions, "justify-items") };
+            public static TailwindSelector JustifySelf => new TailwindValueConvertSelector { SelectorPrefix = "justify-self", Converter = new TailwindKeyValueConverter(AlignItemsAndSelfDefinitions, "justify-self") };
 
             // text
             public static TailwindSelector FontSize => new TailwindValueConvertSelector { SelectorPrefix = "text", Converter = new TailwindBaseScaleConverter("font-size", 16, "px") };
             public static TailwindSelector FontStyle => new TailwindStaticValueSelector { SelectorPrefix = "font", Key = "-unity-font-style", Values = new List<string> { "italic", "bold", "bold-and-italic" } };
             public static TailwindSelector TextColor => new TailwindValueConvertSelector { SelectorPrefix = "text", Converter = new TailwindKeyValueConverter(DefaultColors, "color") };
             public static TailwindSelector BackgroundColor => new TailwindValueConvertSelector { SelectorPrefix = "bg", Converter = new TailwindKeyValueConverter(DefaultColors, "background-color") };
-
-            // background
+            public static TailwindSelector TextAlign => new TailwindValueConvertSelector { SelectorPrefix = "text", Converter = new TailwindKeyValueConverter(TextAlignDefinitions, "-unity-text-align") };
+            public static TailwindSelector TextOverflowPosition => new TailwindStaticValueSelector { SelectorPrefix = "text-overflow", Key = "-unity-text-overflow-position", Values = new List<string> { "start", "middle", "end" } };
+            public static TailwindSelector Whitespace => new TailwindStaticValueSelector { SelectorPrefix = "whitespace", Key = "white-space", Values = new List<string> { "normal", "nowrap" } };
 
             // width
             public static TailwindSelector WidthByPixel => new TailwindValueConvertSelector { SelectorPrefix = "w", Converter = new TailwindBaseSizeConverter(BaseDefinitionSizes, 16, "px", "width") };
@@ -600,12 +658,22 @@ namespace NatsunekoLaboratory.UStyled.Rules
                 AlignContent,
                 AlignItems,
                 AlignSelf,
+                FlexDirection,
+                FlexBasis,
+                Flex,
+                FlexGrow,
+                FlexShrink,
+                JustifyContent,
+                JustifyItems,
+                JustifySelf,
 
                 //
                 FontSize,
                 FontStyle,
                 TextColor,
                 BackgroundColor,
+                TextAlign,
+                TextOverflowPosition,
 
                 //
                 WidthByPixel,
