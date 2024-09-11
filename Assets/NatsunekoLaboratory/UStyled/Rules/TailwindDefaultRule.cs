@@ -52,7 +52,7 @@ namespace NatsunekoLaboratory.UStyled.Rules
 
                 if (selector.StartsWith(SelectorPrefix))
                 {
-                    var selectorWithoutPrefix = selector.Substring(SelectorPrefix.Length + 1);
+                    var selectorWithoutPrefix = SelectorPrefix.Length + 1 >= selector.Length ? selector : selector.Substring(SelectorPrefix.Length + 1);
                     return IsMatchToSelector(selector, selectorWithoutPrefix);
                 }
 
