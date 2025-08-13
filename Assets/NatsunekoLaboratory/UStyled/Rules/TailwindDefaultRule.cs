@@ -69,6 +69,11 @@ namespace NatsunekoLaboratory.UStyled.Rules
                 return false;
             }
 
+            public virtual bool IsMatchArbitrary(string selector, string arbitrary)
+            {
+                return false;
+            }
+
             protected abstract bool IsMatchToSelector(string selector, string selectorWithoutPrefix);
 
             public List<KeyValuePair<string, object>> GetRule(IDynamicRule rule, IConfigurationProvider configuration, string selector)
@@ -80,7 +85,17 @@ namespace NatsunekoLaboratory.UStyled.Rules
                 return GetRuleImpl(rule, configuration, withoutPrefix);
             }
 
+            public List<KeyValuePair<string, object>> GetRule(IDynamicRule rule, string arbitraryValue, IConfigurationProvider configuration, string selector)
+            {
+                if (string.IsNullOrWhiteSpace(SelectorPrefix))
+                    return GetRuleImpl(rule, arbitraryValue, configuration, selector);
+                var withoutPrefix = selector.Substring(SelectorPrefix.Length + 1);
+                return GetRuleImpl(rule, arbitraryValue, configuration, withoutPrefix);
+            }
+
             protected abstract List<KeyValuePair<string, object>> GetRuleImpl(IDynamicRule rule, IConfigurationProvider configuration, string selector);
+
+            protected abstract List<KeyValuePair<string, object>> GetRuleImpl(IDynamicRule rule, string arbitraryValue, IConfigurationProvider configuration, string selector);
         }
 
         public class TailwindStaticValueSelector : TailwindSelector
@@ -101,6 +116,11 @@ namespace NatsunekoLaboratory.UStyled.Rules
                     new(Key, selector)
                 };
             }
+
+            protected override List<KeyValuePair<string, object>> GetRuleImpl(IDynamicRule rule, string arbitraryValue, IConfigurationProvider configuration, string selector)
+            {
+                return new List<KeyValuePair<string, object>>();
+            }
         }
 
         public class TailwindValueConvertSelector : TailwindSelector
@@ -112,9 +132,19 @@ namespace NatsunekoLaboratory.UStyled.Rules
                 return selector.StartsWith(SelectorPrefix + "-") && Converter.IsAcceptedSelector(selectorWithoutPrefix);
             }
 
+            public override bool IsMatchArbitrary(string selector, string arbitrary)
+            {
+                return selector.StartsWith(SelectorPrefix + "-") && Converter.IsAcceptedValue(arbitrary);
+            }
+
             protected override List<KeyValuePair<string, object>> GetRuleImpl(IDynamicRule rule, IConfigurationProvider configuration, string selector)
             {
                 return Converter.ConvertToValue(rule, configuration, selector);
+            }
+
+            protected override List<KeyValuePair<string, object>> GetRuleImpl(IDynamicRule rule, string arbitraryValue, IConfigurationProvider configuration, string selector)
+            {
+                return Converter.ApplyToValue(rule, arbitraryValue, configuration, selector);
             }
         }
 
@@ -748,9 +778,19 @@ namespace NatsunekoLaboratory.UStyled.Rules
                 return new List<KeyValuePair<string, object>>();
             }
 
+            public List<KeyValuePair<string, object>> ApplyToValue(IDynamicRule rule, string arbitraryValue, IConfigurationProvider configuration, string selector)
+            {
+                return new List<KeyValuePair<string, object>>();
+            }
+
             public bool IsAcceptedSelector(string selector)
             {
                 return TailwindSelectors.BaseDefinitionScales.ContainsKey(selector);
+            }
+
+            public bool IsAcceptedValue(string value)
+            {
+                return false;
             }
         }
 
@@ -760,6 +800,7 @@ namespace NatsunekoLaboratory.UStyled.Rules
             private readonly string[] _properties;
             private readonly string _unit;
             private readonly Dictionary<string, float> _definitions;
+            private static readonly Regex ValueRegex = new(@"^(\d+)(px|em|rem|%)?$", RegexOptions.Compiled);
 
             public TailwindBaseSizeConverter(Dictionary<string, float> definitions, float baseValue, string unit = "", params string[] properties)
             {
@@ -781,9 +822,19 @@ namespace NatsunekoLaboratory.UStyled.Rules
                 return items;
             }
 
+            public List<KeyValuePair<string, object>> ApplyToValue(IDynamicRule rule, string arbitraryValue, IConfigurationProvider configuration, string selector)
+            {
+                return new List<KeyValuePair<string, object>>();
+            }
+
             public bool IsAcceptedSelector(string selector)
             {
                 return _definitions.ContainsKey(selector);
+            }
+
+            public bool IsAcceptedValue(string value)
+            {
+                return ValueRegex.IsMatch(value);
             }
         }
 
@@ -809,9 +860,23 @@ namespace NatsunekoLaboratory.UStyled.Rules
                 return items;
             }
 
+            public List<KeyValuePair<string, object>> ApplyToValue(IDynamicRule rule, string arbitraryValue, IConfigurationProvider configuration, string selector)
+            {
+                var items = new List<KeyValuePair<string, object>>();
+                foreach (var s in _key)
+                    items.Add(new KeyValuePair<string, object>(s, arbitraryValue));
+
+                return items;
+            }
+
             public bool IsAcceptedSelector(string selector)
             {
                 return _definitions.ContainsKey(selector);
+            }
+
+            public bool IsAcceptedValue(string value)
+            {
+                return true;
             }
         }
     }

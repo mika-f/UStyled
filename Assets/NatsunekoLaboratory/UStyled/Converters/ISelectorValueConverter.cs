@@ -14,6 +14,10 @@ namespace NatsunekoLaboratory.UStyled.Converters
     {
         List<KeyValuePair<string, object>> ConvertToValue(IDynamicRule rule, IConfigurationProvider configuration, string selector);
 
+        List<KeyValuePair<string, object>> ApplyToValue(IDynamicRule rule, string arbitraryValue, IConfigurationProvider configuration, string selector);
+
         bool IsAcceptedSelector(string selector);
+
+        bool IsAcceptedValue(string value);
     }
 }
