@@ -5,13 +5,17 @@
 
 using UnityEditor;
 
-namespace Assets.NatsunekoLaboratory.UStyled
+namespace NatsunekoLaboratory.UStyled
 {
     internal static class UStyledEditorConfigurations
     {
         [InitializeOnLoadMethod]
         public static void InitializeEditor()
         {
+            var settings = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            if (settings.Contains("USTYLED"))
+                return;
+
             PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, "USTYLED");
         }
     }
